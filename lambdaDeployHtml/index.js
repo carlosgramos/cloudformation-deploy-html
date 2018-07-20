@@ -9,14 +9,15 @@ var s3 = new AWS.S3();
 
 
 var myBucket = "";
-var oktaOrg = "";
+var myHTML = "";
 
 // Retrieve HTML form Github repo for login widget, you can use your own
 let getHtmlFromGithub = function (fetchedUrl) {
     return new Promise(function (resolve, reject) {
         var options = {
             method: 'GET',
-            url: 'https://raw.githubusercontent.com/pmcdowell-okta/cloudformation-deploy-okta-login-widget/master/html/index.html',
+            // url: 'https://raw.githubusercontent.com/pmcdowell-okta/cloudformation-deploy-okta-login-widget/master/html/index.html',
+            url: fetchedUrl,
             headers:
                 {
                     'cache-control': 'no-cache',
@@ -35,6 +36,15 @@ let getHtmlFromGithub = function (fetchedUrl) {
 
 let createS3Bucket = function (bucketname, callback) {
     return new Promise(function (resolve, reject) {
+
+        bucketname=bucketname.toLowerCase().replace(/[^0-9a-z]/gi, ''); //rip out non alphanumerics
+
+
+        // Just in case someone gives a bucket name too short
+        while ( bucketname.length < 8 ) {
+            bucketname=bucketname+Math.random().toString(36).substr(2, 2);
+        }
+
         s3.createBucket({Bucket: bucketname, ACL: 'public-read'}, function (err, data) {
             if (err) {
                 console.log(err)
@@ -117,10 +127,10 @@ exports.handler = (event, context, callback) => {
 
     console.log("start")
     myBucket = event.ResourceProperties['bucketname']
-    oktaOrg = event.ResourceProperties['oktaOrg']
+    myHTML = event.ResourceProperties['oktaOrg']
 
     // You can change this, or even pull from the file system, this is just an example
-    var tempUrl = "https://raw.githubusercontent.com/pmcdowell-okta/cloudformation-deploy-okta-login-widget/master/html/index.html"
+    var tempUrl = myHTML
 
     if (event.RequestType == 'Create') {
 
@@ -137,7 +147,6 @@ exports.handler = (event, context, callback) => {
 
                 })
             })
-            // response.send(event, context, response.SUCCESS, {"canyou": "seeme"});
         }, function reject(err) {
             response.send(event, context, response.FAILED, {});
         })

@@ -29,19 +29,15 @@ if [ -z "$TEMPLATE_FILE" ]; then
 fi
 
 # upload to S3
-sam package  --template-file $TEMPLATE_FILE --s3-bucket $S3_BUCKET  --output-template-file output.yaml
+aws cloudformation package --template-file $TEMPLATE_FILE --s3-bucket $S3_BUCKET  --output-template-file output.yaml
 
 # deploy to cloud formation
-sam deploy --template-file output.yaml --stack-name $STACK_NAME --capabilities CAPABILITY_IAM $4 $5 $6 $7
+aws cloudformation deploy --template-file output.yaml --stack-name $STACK_NAME --capabilities CAPABILITY_IAM $4 $5 $6 $7
 
 # get API endpoint
 API_ENDPOINT=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query 'Stacks[0].Outputs[0].OutputValue')
+echo Test in browser: $API_ENDPOINT
 
-# remove quotes
-API_ENDPOINT=$(sed -e 's/^"//' -e 's/"$//' <<< $API_ENDPOINT)
-
-echo ""
-echo "Test in browser: $API_ENDPOINT"
 
 echo ""
 echo "To Delete the Stack use this command"

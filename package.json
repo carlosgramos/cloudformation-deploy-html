@@ -1,9 +1,10 @@
 {
-  "name": "oktaloginwidgettos3",
+  "name": "s3",
   "version": "0.0.1",
   "private": false,
-  "dependencies": {},
-  "scripts": {
-    "install": "cd lambdaDeployLoginWidgetToS3 && npm install"
-  }
+  "dependencies": {
+    "strings": "^0.4.2",
+    "aws-sdk": "latest"
+  },
+  "scripts": {}
 }

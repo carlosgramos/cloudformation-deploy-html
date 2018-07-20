@@ -1,14 +1,14 @@
 {
-  "name": "oktaloginwidgettos3",
+  "name": "s3",
   "version": "0.0.1",
   "private": false,
   "dependencies": {
+    "strings": "^0.4.2",
     "aws-sdk": "latest",
     "https": "latest",
-    "request": "^2.87.0",
-    "url": "latest"
+    "url": "latest",
+    "fs": "latest",
+    "request": "latest"
   },
-  "scripts": {
-    "start": "node app.js"
-  }
+  "scripts": {}
 }

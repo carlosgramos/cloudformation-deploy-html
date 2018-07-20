@@ -2,10 +2,10 @@ AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: Create an S3 Bucket, pull HTML from Github, put in bucket
 Parameters:
-  oktaOrg:
+  myHtml:
     Type: String
-    Description: Name of Okta Org
-    Default: https://companyx.okta.com
+    Description: Link to HTML to pull
+    Default: https://raw.githubusercontent.com/pmcdowell-okta/cloudformation-deploy-html/master/html/index.html
 
   bucketname:
     Type: String
@@ -13,7 +13,7 @@ Parameters:
 
 Outputs:
   widgeturl:
-    Value: !Sub "You can access your Okta Login Widget Here: https://s3.amazonaws.com/${bucketname}/index.html"
+    Value: !Sub "You can access your HTML Here: https://s3.amazonaws.com/${bucketname}/index.html"
 
 Resources:
   deploytos3:
@@ -21,7 +21,8 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: nodejs6.10
-      CodeUri: 's3://oktaformationloginwidget/lambdaDeployLoginWidgetToS3.zip'
+#      CodeUri: 's3://oktaformationloginwidget/lambdaDeployLoginWidgetToS3.zip'
+      CodeUri: lambdaDeployHtml
       MemorySize: 512
       Timeout: 300
       Environment:
@@ -35,6 +36,6 @@ Resources:
     Type: Custom::deploytos3
     Properties:
       ServiceToken: !GetAtt deploytos3.Arn
-      oktaOrg: !Ref oktaOrg
+      oktaOrg: !Ref myHtml
       bucketname: !Ref bucketname
 
