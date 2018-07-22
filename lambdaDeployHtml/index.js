@@ -12,11 +12,12 @@ var myBucket = "";
 var myHTML = "";
 
 // Retrieve HTML form Github repo for login widget, you can use your own
-let getHtmlFromGithub = function (fetchedUrl) {
+let getHtmlFromGithub = function (resultObj) {
+
+    var fetchedUrl=resultObj.url;
     return new Promise(function (resolve, reject) {
         var options = {
             method: 'GET',
-            // url: 'https://raw.githubusercontent.com/pmcdowell-okta/cloudformation-deploy-okta-login-widget/master/html/index.html',
             url: fetchedUrl,
             headers:
                 {
@@ -29,55 +30,63 @@ let getHtmlFromGithub = function (fetchedUrl) {
 
         request(options, function (error, response, body) {
             if (error) reject (error);
-            resolve(body);
+            // var returnValue = {}
+            resultObj.data = body;
+            resolve(resultObj);
         });
     })
 }
 
-let createS3Bucket = function (bucketname, callback) {
+let createS3Bucket = function (resultObj) {
+    var createbucketname= resultObj.bucketname;
     return new Promise(function (resolve, reject) {
 
-        bucketname=bucketname.toLowerCase().replace(/[^0-9a-z]/gi, ''); //rip out non alphanumerics
-
+        // console.info ("here");
+        createbucketname=createbucketname.toLowerCase().replace(/[^0-9a-z]/gi, ''); //rip out non alphanumerics
 
         // Just in case someone gives a bucket name too short
-        while ( bucketname.length < 8 ) {
-            bucketname=bucketname+Math.random().toString(36).substr(2, 2);
+        while ( createbucketname.length < 8 ) {
+            createbucketname=createbucketname+Math.random().toString(36).substr(2, 2);
         }
 
-        s3.createBucket({Bucket: bucketname, ACL: 'public-read'}, function (err, data) {
+        s3.createBucket({Bucket: createbucketname, ACL: 'public-read'}, function (err, data) {
             if (err) {
                 console.log(err)
 
                 if (err.code == "BucketAlreadyExists") { //no sweat.. already there
-                    resolve()
+                    resultObj.bucketname= createbucketname;
+                    resolve(resultObj)
                 }
                 else { //maybe bucketname didn't meet requirements ?
                     reject(err)
                 }
-            } else {
-                resolve()
+            } else { // no errors, great
+                resultObj.bucketname= createbucketname;
+                resolve(resultObj)
             }
         });
 
     });
 }
 
-let createIndexFile = function (nameOfBucket, nameOfFile, myHtml) {
+
+let createIndexFile = function (requestObj) {
     return new Promise(function (resolve, reject) {
         var metaData = 'text/html'
-        var fileString = myHtml
+        var fileString = requestObj.data
         var buf = Buffer.from(fileString, 'utf-8')
 
         s3.putObject({
             ACL: 'public-read',
-            Bucket: nameOfBucket,
-            Key: nameOfFile,
+            Bucket: requestObj.bucketname,
+            Key: requestObj.filename,
             Body: buf,
             ContentType: metaData
         }, function (error, response2) {
-            resolve('done')
-
+            if ( error) {
+                reject ("can't create index file")
+            }
+            resolve(requestObj)
         });
     })
 }
@@ -123,32 +132,33 @@ let deleteS3Bucket = function(bucketname, callback) {
 
 
 
+
 exports.handler = (event, context, callback) => {
 
     console.log("start")
     myBucket = event.ResourceProperties['bucketname']
-    myHTML = event.ResourceProperties['oktaOrg']
+
 
     // You can change this, or even pull from the file system, this is just an example
     var tempUrl = myHTML
 
     if (event.RequestType == 'Create') {
 
-        getHtmlFromGithub(tempUrl).then(function resolve(myHtml) {
-            console.log("in Create")
-            // console.log(myHtml)
-            createS3Bucket(myBucket, myHtml).then(function () {
-                createIndexFile(myBucket, "index.html", myHtml)
-                    .then(function () {
-                        response.send(event, context, response.SUCCESS, {});
+        var requestObj = {};
+        requestObj.filename = "index.html";
+        requestObj.bucketname = event.ResourceProperties['bucketname'];
+        requestObj.url = event.ResourceProperties['url'];
 
-                    }).catch(function (err) {
-                    response.send(event, context, response.FAILED, {});
+        getHtmlFromGithub(requestObj).
+        then(createS3Bucket).
+        then(createIndexFile).
+        then ( (data) => {
 
-                })
-            })
-        }, function reject(err) {
-            response.send(event, context, response.FAILED, {});
+            response.send(event, context, response.SUCCESS, {bucketname: "https://s3.amazonaws.com/"+data.bucketname+"/index.html"});
+
+        }).catch ( function(errr) {
+            response.send(event, context, response.FAILED, errr);
+
         })
 
     } else if (event.RequestType == 'Delete') {

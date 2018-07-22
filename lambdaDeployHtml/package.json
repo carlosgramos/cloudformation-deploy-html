@@ -3,12 +3,12 @@
   "version": "0.0.1",
   "private": false,
   "dependencies": {
-    "strings": "^0.4.2",
-    "aws-sdk": "latest",
-    "https": "latest",
-    "url": "latest",
+    "aws-sdk": "^2.279.1",
     "fs": "latest",
-    "request": "latest"
+    "https": "^1.0.0",
+    "request": "^2.87.0",
+    "strings": "^0.4.2",
+    "url": "^0.11.0"
   },
   "scripts": {}
 }
