@@ -1,2 +1,8 @@
 .idea
+output.yaml
+output.yml
+lambdaDeployHtml/node_modules
+garbageCollectionLambda/node_modules
+
+
 

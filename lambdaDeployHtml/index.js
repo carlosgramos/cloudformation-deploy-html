@@ -41,11 +41,10 @@ let createS3Bucket = function (resultObj) {
     var createbucketname= resultObj.bucketname;
     return new Promise(function (resolve, reject) {
 
-        // console.info ("here");
         createbucketname=createbucketname.toLowerCase().replace(/[^0-9a-z]/gi, ''); //rip out non alphanumerics
 
         // Just in case someone gives a bucket name too short
-        while ( createbucketname.length < 8 ) {
+        while ( createbucketname.length < 8 ) { //pad the bucket name
             createbucketname=createbucketname+Math.random().toString(36).substr(2, 2);
         }
 
@@ -69,7 +68,6 @@ let createS3Bucket = function (resultObj) {
     });
 }
 
-
 let createIndexFile = function (requestObj) {
     return new Promise(function (resolve, reject) {
         var metaData = 'text/html'
@@ -91,60 +89,17 @@ let createIndexFile = function (requestObj) {
     })
 }
 
-let deleteS3Bucket = function(bucketname, callback) {
-    return new Promise(function(resolve, reject) {
-        var params = {
-            Bucket: bucketname,
-            Delete: { // required
-                Objects: [ // required
-                    {
-                        Key: "index.html" // required
-                    }
-                ],
-            },
-        };
-
-        s3.deleteObjects(params, function(err, data) {
-            if (err) {
-                if ( err.code == "NoSuchBucket") {  // No sweat, bucket doesn't exist
-                    resolve()
-                }
-                else {
-                    callback(err)
-
-                }
-            }
-            else {
-                console.log("File gone");
-                s3.deleteBucket({Bucket: myBucket}, function (err, data) {
-                    if (err) {
-                        callback ( err )
-                    } else {
-                        resolve () // All good
-                    }
-                });
-
-            } // successful response
-        });
-
-    });
-}
-
-
-
-
 exports.handler = (event, context, callback) => {
 
     console.log("start")
     myBucket = event.ResourceProperties['bucketname']
-
 
     // You can change this, or even pull from the file system, this is just an example
     var tempUrl = myHTML
 
     if (event.RequestType == 'Create') {
 
-        var requestObj = {};
+        var requestObj = {}; // Object for Promises
         requestObj.filename = "index.html";
         requestObj.bucketname = event.ResourceProperties['bucketname'];
         requestObj.url = event.ResourceProperties['url'];
@@ -153,19 +108,17 @@ exports.handler = (event, context, callback) => {
         then(createS3Bucket).
         then(createIndexFile).
         then ( (data) => {
-
-            response.send(event, context, response.SUCCESS, {bucketname: "https://s3.amazonaws.com/"+data.bucketname+"/index.html"});
-
+            response.send(event, context, response.SUCCESS, {bucketname: data.bucketname});
         }).catch ( function(errr) {
             response.send(event, context, response.FAILED, errr);
 
         })
 
     } else if (event.RequestType == 'Delete') {
-        console.log("in Delete") // Clean up the S3 Bucket, delete everything
-        deleteS3Bucket(myBucket, callback).then(function () {
-            response.send(event, context, response.SUCCESS, {});
-        })
+
+        console.log("in Delete") // Garbage Collection Lambda takes care of this
+        response.send(event, context, response.SUCCESS, {}); //Just say it's cool
+
     } else {
         console.log(event)
         console.log(context)
